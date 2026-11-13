@@ -1,0 +1,213 @@
+clc,clear all,close all;
+
+%we use degree and mm, so may need trans to rad when in calculation
+
+%define point
+    %toward the front side of the interface
+    %     y
+    %     |
+    %   1 | 2
+    %   ----------x
+    %   3 | 4
+    %     |
+
+% range_x=350;range_y=200;
+% point_dist=3681;iii=1;
+% point=[-range_x;range_y;point_dist];
+% pointx=[-range_x+1;range_y;point_dist];
+% pointy=[-range_x;range_y+1;point_dist];
+% pointz=[-range_x;range_y;point_dist+1];
+% 
+% line_A=[0,1,0];
+% line_B=[1/2,sqrt(3)/2,0];
+% line_C=[-1/2,sqrt(3)/2,0];
+% 
+% point1=[-350;200;point_dist;];
+% point2=[350;200;point_dist;];
+% point3=[-350;-200;point_dist;];
+% point4=[350;-200;point_dist;];
+
+point=[0,0,190]';
+
+%define rotation
+%omega means the rot axis, which is used in rodligesi.
+%omega is defined by x,y,z coordinate
+%we get omega by sample from a sphere, the algorithm is an approximate way.
+my_theta=4;
+number=1000;
+omega=get_rot_axis(number);
+show_sample(omega,number);
+
+num=size(omega,1);
+for i=1:num
+
+    v=omega(i,:).*pi/180;
+    norm_v=norm(v);
+    k=v/norm_v;
+    theta=my_theta*pi/180;
+    I=eye(3);
+    K=[0,-k(1,3),k(1,2);k(1,3),0,-k(1,1);-k(1,2),k(1,1),0;];
+    rot=I+K.*sin(theta)+K*K.*(1-cos(theta));
+
+    i_x=[1,0,0;]';
+    i_y=[0,1,0;]';
+    i_z=[0,0,1;]';
+
+    i_=[i_x,i_y,i_z;];
+    % i_t=[i_xt,i_yt,i_zt];
+    % R=i_t*i_';
+
+    % i_A=rot*line_A';
+    % 
+    % R_A=i_A'*i_';
+    % 
+    % angle_A=get_angle_i(line_A,R_A)*180/pi;
+    % 
+    % i_B=rot*line_B';
+    % 
+    % R_B=i_B'*i_';
+    % 
+    % angle_B=get_angle_i(line_B,R_B)*180/pi;
+    % 
+    % i_C=rot*line_C';
+    % 
+    % R_C=i_C'*i_';
+    % 
+    % angle_C=get_angle_i(line_C,R_C)*180/pi;
+
+
+    pointt=rot*point;
+    dis=get_dis(pointt,point);
+    angle_A=get_angle(omega(i,:),i_x');
+    angle_B=get_angle(omega(i,:),i_y');
+    angle_C=get_angle(omega(i,:),i_z');
+    % point1t=rot*point1;
+    % point2t=rot*point2;
+    % point3t=rot*point3;
+    % point4t=rot*point4;
+    % point5t=rot*point5;
+    % point6t=rot*point6;
+    % dis1=get_dis(point1,point1t);
+    % dis2=get_dis(point2,point2t);
+    % dis3=get_dis(point3,point3t);
+    % dis4=get_dis(point4,point4t);
+    % dis5=get_dis(point5,point5t);
+    % dis6=get_dis(point6,point6t);
+    my_dis=dis;
+    rdis(i,:)=my_dis;
+    % my_dis=[dis1,dis2,dis3,dis4,dis5,dis6];
+    % my_point=[point1t,point2t,point3t,point4t,point5t,point6t];
+    % rdis(i,:)=my_dis;
+    % rpoint(i,:,:)=my_point;
+    % ri_t(i,:,:)=[i_t];
+    % rpointx(i,:)=[pointxt];
+    % rpointy(i,:)=[pointyt];
+    % rpointz(i,:)=[pointzt];
+    % reuler(i,:)=[euler_sai, euler_theta, euler_phi];
+    % reuler(i,:)=[eul_A];
+    % reuler5(i,:)=[eul_B];
+    % reuler6(i,:)=[eul_C];
+    % rangle(i,1)=angle_A;
+    % rangle(i,2)=angle_B;
+    % rangle(i,3)=angle_C;
+    ttt=0;
+end
+
+% figure;
+% hold on;grid on;
+% plot(omega);
+% xlabel('data number');
+% ylabel('/°');
+% title('omega');
+
+% colors=lines(6);
+
+% figure;
+% hold on;grid on;
+% plot(omega);
+% legend('x','y','z','Location','southeast');
+
+% figure;
+% hold on;grid on;
+% plot(rangle(:,1));
+% plot(rangle(:,2));
+% plot(rangle(:,3));
+% legend('A','B','C','location','southeast');
+% xlabel('枚举编号');
+% ylabel('接口对接面法向量偏角');
+
+% figure;
+% hold on;grid on;
+% for i=1:6
+%     plot(rdis(:,i),'Color',colors(i,:));
+% end
+% xlabel('枚举编号');
+% ylabel('接口对接距离偏差/mm');
+% legend('1','2','3','4','5','6','Location','southeast');
+
+figure;
+hold on;grid on;
+plot(rdis(:,1));
+xlabel('枚举编号');
+ylabel('对接距离偏差/mm');
+
+% writematrix(reuler, 'reuler.xlsx');
+% writematrix(rdis, 'rdis.xlsx');
+% writematrix(omega,'omeg.xlsx');
+% writematrix(rpoint,'rpoint.xlsx');
+
+
+function [dis]=get_dis(point1,point2)
+    t1=point1(1,1)-point2(1,1);
+    t2=point1(2,1)-point2(2,1);
+    t3=point1(3,1)-point2(3,1);
+    dis=sqrt(t1*t1+t2*t2+t3*t3);
+end
+
+function [theta]=get_angle(line1,line2)
+    dpd=dot(line1,line2);
+    norm1=norm(line1);
+    norm2=norm(line2);
+    cos_theta=dpd/(norm1*norm2);
+    cos_theta=min(max(cos_theta,-1),1);
+    cos_theta=abs(cos_theta);
+    theta=acos(cos_theta);
+    theta=theta*180/pi;
+end
+
+function [angle]=get_angle_i(line1,line2)
+
+    cnt=dot(line1,line2);
+
+    angle=acos(cnt);
+
+end
+
+function [omega]=get_rot_axis(number)
+    omega=zeros(number,3);
+    phi=(sqrt(5)-1)/2;
+    for i=1:number
+        z=(2*i-1)/number-1;
+        x=sqrt(1-z^2)*cos(2*pi*i*phi);
+        y=sqrt(1-z^2)*sin(2*pi*i*phi);
+        new_data=[x,y,z];
+        omega(i,:)=new_data;
+    end
+end
+
+function show_sample(omega,number)
+    % 2. 创建图形窗口
+    figure;
+    scatter3(omega(:,1), omega(:,2), omega(:,3), 15, 'filled', 'MarkerFaceColor', '#0072BD');
+    
+    % 3. 美化图形
+    axis equal;      % 保证坐标轴比例一致，否则球体会看起来像椭球
+    grid on;         % 显示网格
+    xlabel('X');
+    ylabel('Y');
+    zlabel('Z');
+    title(['Spherical Fibonacci Sampling (n = ', num2str(number), ')']);
+    
+    % 4. 视角调整
+    view(3);         % 设置为 3D 视角
+end
